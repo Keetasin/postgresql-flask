@@ -1,17 +1,11 @@
 import flask
-
 import models
 import forms
 
-
 app = flask.Flask(__name__)
 app.config["SECRET_KEY"] = "This is secret key"
-app.config[
-    "SQLALCHEMY_DATABASE_URI"
-] = "postgresql://coe:CoEpasswd@localhost:5432/coedb"
-
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://coe:CoEpasswd@localhost:5432/coedb"
 models.init_app(app)
-
 
 @app.route("/")
 def index():
@@ -19,11 +13,7 @@ def index():
     notes = db.session.execute(
         db.select(models.Note).order_by(models.Note.title)
     ).scalars()
-    return flask.render_template(
-        "index.html",
-        notes=notes,
-    )
-
+    return flask.render_template("index.html", notes=notes)
 
 @app.route("/notes/create", methods=["GET", "POST"])
 def notes_create():
@@ -31,11 +21,13 @@ def notes_create():
     if form.validate_on_submit():
         note = models.Note()
         form.populate_obj(note)
-        note.tags = []
+        note.tags = []  # เริ่มต้นให้แท็กเป็นลิสต์ว่าง ๆ
 
         db = models.db
         for tag_name in form.tags.data:  # ใช้ data ของ form.tags ซึ่งเป็นรายชื่อ tag
-            tag = db.session.execute(db.select(models.Tag).where(models.Tag.name == tag_name)).scalars().first()
+            tag = db.session.execute(
+                db.select(models.Tag).where(models.Tag.name == tag_name)
+            ).scalars().first()
 
             if not tag:
                 tag = models.Tag(name=tag_name)
@@ -51,25 +43,23 @@ def notes_create():
 
     return flask.render_template("notes-create.html", form=form)
 
-
 @app.route("/tags/<tag_name>")
 def tags_view(tag_name):
     db = models.db
-    tag = (
-        db.session.execute(db.select(models.Tag).where(models.Tag.name == tag_name))
-        .scalars()
-        .first()
-    )
+    tag = db.session.execute(
+        db.select(models.Tag).where(models.Tag.name == tag_name)
+    ).scalars().first()
+    
+    if not tag:
+        return flask.abort(404)
+
     notes = db.session.execute(
         db.select(models.Note).where(models.Note.tags.any(id=tag.id))
     ).scalars()
 
     return flask.render_template(
-        "tags-view.html",
-        tag_name=tag_name,
-        notes=notes,
+        "tags-view.html", tag_name=tag_name, notes=notes
     )
-
 
 @app.route("/notes/delete/<int:id>", methods=["POST"])
 def notes_delete(id):
@@ -82,7 +72,6 @@ def notes_delete(id):
     db.session.commit()
     return flask.redirect(flask.url_for("index"))
 
-
 @app.route("/note/<int:id>/edit", methods=["GET", "POST"])
 def notes_edit(id):
     note = models.Note.query.get(id)
@@ -91,8 +80,23 @@ def notes_edit(id):
     if form.validate_on_submit():
         form.populate_obj(note)  # ใช้ populate_obj กับฟอร์มเพื่ออัปเดตข้อมูลโน้ต
 
-        # ตอนนี้ tags จะถูกตั้งค่าเป็น list ของ Tag instance จาก populate_obj
-        models.db.session.commit()
+        # จัดการแท็กใหม่ในกรณีที่มีการเปลี่ยนแปลง
+        note.tags = []  # ลบแท็กเดิมก่อน
+        db = models.db
+        for tag_name in form.tags.data:
+            tag = db.session.execute(
+                db.select(models.Tag).where(models.Tag.name == tag_name)
+            ).scalars().first()
+            
+            if not tag:
+                tag = models.Tag(name=tag_name)
+                db.session.add(tag)
+
+            # Check if the tag is already associated with the note to prevent duplicates
+            if tag not in note.tags:
+                note.tags.append(tag)
+
+        db.session.commit()
         return flask.redirect(flask.url_for("index"))
 
     return flask.render_template("notes-edit.html", form=form, note=note)

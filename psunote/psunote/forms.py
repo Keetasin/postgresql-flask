@@ -2,7 +2,6 @@ from wtforms_sqlalchemy.orm import model_form
 from flask_wtf import FlaskForm
 from wtforms import Field, widgets
 from models import Tag  # นำเข้า Tag จาก models.py
-
 import models
 
 
@@ -30,8 +29,8 @@ class TagListField(Field):
 
     def _value(self):
         if self.data:
-            # แปลงข้อมูลใน self.data ให้เป็น string ก่อนที่จะใช้ join
-            return ", ".join(str(tag) for tag in self.data)  # แปลงทุกๆ tag ให้เป็น string
+            # ตรวจสอบว่า self.data เป็น Tag object หรือไม่
+            return ", ".join(str(tag) if isinstance(tag, str) else tag.name for tag in self.data)
         else:
             return ""
 
@@ -39,10 +38,18 @@ class TagListField(Field):
     def populate_obj(self, obj, name):
         tag_instances = []
         for tag_name in self.data:
-            tag = Tag.query.filter_by(name=tag_name).first()  # ค้นหา tag จากฐานข้อมูล
-            if tag:  # ถ้าพบ tag ในฐานข้อมูล
-                tag_instances.append(tag)
-        setattr(obj, name, tag_instances)  # ตั้งค่าให้กับฟิลด์ในโมเดล
+            # ค้นหา tag จากฐานข้อมูล
+            tag = Tag.query.filter_by(name=tag_name).first()
+
+            if not tag:  # ถ้าไม่พบแท็กในฐานข้อมูล
+                # สร้างแท็กใหม่เป็น Tag object และเพิ่มเข้าไปในฐานข้อมูล
+                tag = Tag(name=tag_name)
+                models.db.session.add(tag)
+            # เพิ่ม Tag object (หรือชื่อถ้าไม่พบ Tag ในฐานข้อมูล) เข้าไปใน tag_instances
+            tag_instances.append(tag)
+
+        # ตั้งค่าให้กับฟิลด์ในโมเดล
+        setattr(obj, name, tag_instances)
 
 
 
@@ -56,3 +63,10 @@ BaseNoteForm = model_form(
 
 class NoteForm(BaseNoteForm):
     tags = TagListField("Tag")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # ตรวจสอบว่า obj ถูกกำหนดหรือไม่ก่อนเข้าถึง
+        if hasattr(self, 'obj') and self.obj and self.obj.tags:
+            self.tags.data = [tag.name for tag in self.obj.tags]  # ให้แท็กที่มีอยู่มาแสดงในฟอร์ม
