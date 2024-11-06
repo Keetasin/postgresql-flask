@@ -1,6 +1,7 @@
 from wtforms_sqlalchemy.orm import model_form
 from flask_wtf import FlaskForm
 from wtforms import Field, widgets
+from models import Tag  # นำเข้า Tag จาก models.py
 
 import models
 
@@ -29,9 +30,20 @@ class TagListField(Field):
 
     def _value(self):
         if self.data:
-            return ", ".join(self.data)
+            # แปลงข้อมูลใน self.data ให้เป็น string ก่อนที่จะใช้ join
+            return ", ".join(str(tag) for tag in self.data)  # แปลงทุกๆ tag ให้เป็น string
         else:
             return ""
+
+
+    def populate_obj(self, obj, name):
+        tag_instances = []
+        for tag_name in self.data:
+            tag = Tag.query.filter_by(name=tag_name).first()  # ค้นหา tag จากฐานข้อมูล
+            if tag:  # ถ้าพบ tag ในฐานข้อมูล
+                tag_instances.append(tag)
+        setattr(obj, name, tag_instances)  # ตั้งค่าให้กับฟิลด์ในโมเดล
+
 
 
 BaseNoteForm = model_form(

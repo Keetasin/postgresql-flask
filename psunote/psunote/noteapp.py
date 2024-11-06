@@ -41,13 +41,16 @@ def notes_create():
                 tag = models.Tag(name=tag_name)
                 db.session.add(tag)
 
-            note.tags.append(tag)
+            # Check if the tag is already associated with the note to prevent duplicates
+            if tag not in note.tags:
+                note.tags.append(tag)
 
         db.session.add(note)
         db.session.commit()
         return flask.redirect(flask.url_for("index"))
 
     return flask.render_template("notes-create.html", form=form)
+
 
 @app.route("/tags/<tag_name>")
 def tags_view(tag_name):
@@ -80,6 +83,19 @@ def notes_delete(id):
     return flask.redirect(flask.url_for("index"))
 
 
+@app.route("/note/<int:id>/edit", methods=["GET", "POST"])
+def notes_edit(id):
+    note = models.Note.query.get(id)
+    form = forms.NoteForm(obj=note)  # กำหนด obj เป็น note ที่ต้องการแก้ไข
+
+    if form.validate_on_submit():
+        form.populate_obj(note)  # ใช้ populate_obj กับฟอร์มเพื่ออัปเดตข้อมูลโน้ต
+
+        # ตอนนี้ tags จะถูกตั้งค่าเป็น list ของ Tag instance จาก populate_obj
+        models.db.session.commit()
+        return flask.redirect(flask.url_for("index"))
+
+    return flask.render_template("notes-edit.html", form=form, note=note)
 
 if __name__ == "__main__":
     app.run(debug=True)
