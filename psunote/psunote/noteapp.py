@@ -28,35 +28,26 @@ def index():
 @app.route("/notes/create", methods=["GET", "POST"])
 def notes_create():
     form = forms.NoteForm()
-    if not form.validate_on_submit():
-        print("error", form.errors)
-        return flask.render_template(
-            "notes-create.html",
-            form=form,
-        )
-    note = models.Note()
-    form.populate_obj(note)
-    note.tags = []
+    if form.validate_on_submit():
+        note = models.Note()
+        form.populate_obj(note)
+        note.tags = []
 
-    db = models.db
-    for tag_name in form.tags.data:
-        tag = (
-            db.session.execute(db.select(models.Tag).where(models.Tag.name == tag_name))
-            .scalars()
-            .first()
-        )
+        db = models.db
+        for tag_name in form.tags.data:  # ใช้ data ของ form.tags ซึ่งเป็นรายชื่อ tag
+            tag = db.session.execute(db.select(models.Tag).where(models.Tag.name == tag_name)).scalars().first()
 
-        if not tag:
-            tag = models.Tag(name=tag_name)
-            db.session.add(tag)
+            if not tag:
+                tag = models.Tag(name=tag_name)
+                db.session.add(tag)
 
-        note.tags.append(tag)
+            note.tags.append(tag)
 
-    db.session.add(note)
-    db.session.commit()
+        db.session.add(note)
+        db.session.commit()
+        return flask.redirect(flask.url_for("index"))
 
-    return flask.redirect(flask.url_for("index"))
-
+    return flask.render_template("notes-create.html", form=form)
 
 @app.route("/tags/<tag_name>")
 def tags_view(tag_name):
@@ -75,6 +66,19 @@ def tags_view(tag_name):
         tag_name=tag_name,
         notes=notes,
     )
+
+
+@app.route("/notes/delete/<int:id>", methods=["POST"])
+def notes_delete(id):
+    db = models.db
+    note = db.session.execute(db.select(models.Note).where(models.Note.id == id)).scalars().first()
+    if not note:
+        return flask.abort(404)
+
+    db.session.delete(note)
+    db.session.commit()
+    return flask.redirect(flask.url_for("index"))
+
 
 
 if __name__ == "__main__":

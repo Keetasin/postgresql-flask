@@ -16,12 +16,14 @@
       Tags: 
       {% for t in note.tags %}
         <a href="{{ url_for('tags_view', tag_name=t.name) }}">{{ t.name }}</a>
-    {% endfor %}
+      {% endfor %}
       <br>
       Last update: {{ note.updated_date }}
     </div>
+    <form action="{{ url_for('notes_delete', id=note.id) }}" method="POST">
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
   </div>
 </div>
 {% endfor %}
 {% endblock %}
-
