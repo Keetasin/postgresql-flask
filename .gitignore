@@ -1,4 +1,4 @@
-/psunote/venv
+/venv
 /env
 *.pyc
 *.cfg
