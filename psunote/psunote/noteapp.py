@@ -58,13 +58,28 @@ def tags_view(tag_name):
     ).scalars()
 
     return flask.render_template(
-        "tags-view.html", tag_name=tag_name, notes=notes
+        "tags-view.html", tag=tag, tag_name=tag_name, notes=notes
     )
 
-@app.route("/notes/delete/<int:id>", methods=["POST"])
+
+@app.route("/tags/delete/<int:id>", methods=["POST"], endpoint="tags_delete")
+def tags_delete(id):
+    db = models.db
+    tag = db.session.execute(db.select(models.Tag).where(models.Tag.id == id)).scalars().first()
+    
+    if not tag:
+        return flask.abort(404)
+
+    db.session.delete(tag)
+    db.session.commit()
+    return flask.redirect(flask.url_for("index"))
+
+# Added route to handle note deletion
+@app.route("/notes/delete/<int:id>", methods=["POST"], endpoint="notes_delete")
 def notes_delete(id):
     db = models.db
     note = db.session.execute(db.select(models.Note).where(models.Note.id == id)).scalars().first()
+
     if not note:
         return flask.abort(404)
 
