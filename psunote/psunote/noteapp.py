@@ -66,13 +66,22 @@ def tags_view(tag_name):
 def tags_delete(id):
     db = models.db
     tag = db.session.execute(db.select(models.Tag).where(models.Tag.id == id)).scalars().first()
-    
+
     if not tag:
         return flask.abort(404)
 
+    # ลบการเชื่อมโยงระหว่าง tag และ notes จากตาราง note_tag_m2m
+    db.session.execute(
+        db.delete(models.note_tag_m2m).where(models.note_tag_m2m.c.tag_id == id)
+    )
+
+    # ลบ tag
     db.session.delete(tag)
     db.session.commit()
+
     return flask.redirect(flask.url_for("index"))
+
+
 
 # Added route to handle note deletion
 @app.route("/notes/delete/<int:id>", methods=["POST"], endpoint="notes_delete")
