@@ -21,10 +21,10 @@ def notes_create():
     if form.validate_on_submit():
         note = models.Note()
         form.populate_obj(note)
-        note.tags = []  # เริ่มต้นให้แท็กเป็นลิสต์ว่าง ๆ
+        note.tags = []  
 
         db = models.db
-        for tag_name in form.tags.data:  # ใช้ data ของ form.tags ซึ่งเป็นรายชื่อ tag
+        for tag_name in form.tags.data:  
             tag = db.session.execute(
                 db.select(models.Tag).where(models.Tag.name == tag_name)
             ).scalars().first()
@@ -33,7 +33,6 @@ def notes_create():
                 tag = models.Tag(name=tag_name)
                 db.session.add(tag)
 
-            # Check if the tag is already associated with the note to prevent duplicates
             if tag not in note.tags:
                 note.tags.append(tag)
 
@@ -70,20 +69,16 @@ def tags_delete(id):
     if not tag:
         return flask.abort(404)
 
-    # ลบการเชื่อมโยงระหว่าง tag และ notes จากตาราง note_tag_m2m
     db.session.execute(
         db.delete(models.note_tag_m2m).where(models.note_tag_m2m.c.tag_id == id)
     )
 
-    # ลบ tag
     db.session.delete(tag)
     db.session.commit()
 
     return flask.redirect(flask.url_for("index"))
 
 
-
-# Added route to handle note deletion
 @app.route("/notes/delete/<int:id>", methods=["POST"], endpoint="notes_delete")
 def notes_delete(id):
     db = models.db
@@ -99,13 +94,12 @@ def notes_delete(id):
 @app.route("/note/<int:id>/edit", methods=["GET", "POST"])
 def notes_edit(id):
     note = models.Note.query.get(id)
-    form = forms.NoteForm(obj=note)  # กำหนด obj เป็น note ที่ต้องการแก้ไข
+    form = forms.NoteForm(obj=note)  
 
     if form.validate_on_submit():
-        form.populate_obj(note)  # ใช้ populate_obj กับฟอร์มเพื่ออัปเดตข้อมูลโน้ต
-
-        # จัดการแท็กใหม่ในกรณีที่มีการเปลี่ยนแปลง
-        note.tags = []  # ลบแท็กเดิมก่อน
+        form.populate_obj(note)  
+       
+        note.tags = [] 
         db = models.db
         for tag_name in form.tags.data:
             tag = db.session.execute(
@@ -116,7 +110,6 @@ def notes_edit(id):
                 tag = models.Tag(name=tag_name)
                 db.session.add(tag)
 
-            # Check if the tag is already associated with the note to prevent duplicates
             if tag not in note.tags:
                 note.tags.append(tag)
 

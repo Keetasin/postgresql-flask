@@ -27,7 +27,6 @@
   </div>
 </div>
 {% endfor %}
-<!-- เพิ่มฟอร์มลบ Tag -->
 <form action="{{ url_for('tags_delete', id=tag.id) }}" method="POST" class="my-3">
   <button type="submit" class="btn btn-danger">Delete Tag</button>
 </form>
