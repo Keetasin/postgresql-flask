@@ -24,11 +24,11 @@ Ensure that you have Python installed on your system before proceeding.
 
 1. Clone the repository:
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/Keetasin/postgresql-flask.git
    ```
 2. Navigate to the project directory:
    ```bash
-   cd <project-folder>
+   cd postgresql-flask
    ```
 3. Create a virtual environment:
    ```bash
@@ -55,8 +55,6 @@ Ensure that you have Python installed on your system before proceeding.
    ```bash
    http://localhost:7080/
    ```
-- Email: `coe@local.db`
-- Password: `CoEpasswd`
 ---
 
 ### Running and Viewing the Application
